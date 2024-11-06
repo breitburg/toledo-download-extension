@@ -1,0 +1,24 @@
+{
+    "manifest_version": 3,
+    "name": "KU Leuven Lecture Downloader",
+    "version": "1.0",
+    "description": "Adds download button to KU Leuven video players",
+    "permissions": [
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://*.edu.kuleuven.cloud/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://*.edu.kuleuven.cloud/*"
+            ],
+            "all_frames": true,
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_end"
+        }
+    ]
+}
