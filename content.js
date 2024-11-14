@@ -52,7 +52,7 @@ function findDownloadLinks() {
     downloadButton.onclick = () => window.location.href = url;
 
     // Append the download button to the control bar
-    const controlBar = kplayerIfpDocument.querySelector('body > div.playlistInterface > div > div.controlBarContainer.hover.open > div.controlsContainer');
+    const controlBar = kplayerIfpDocument.querySelector('.controlsContainer');
 
     if (!controlBar) {
         debugLog('Control bar not found');
