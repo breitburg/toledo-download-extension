@@ -4,64 +4,71 @@ function debugLog(message) {
 
 debugLog('Content script loaded in frame:', window.location.href);
 
-function extractDownloadUrl(scriptContent) {
-    try {
-        // Look for the downloadUrl in the script content using RegEx
-        const match = scriptContent.match(/"downloadUrl"\s*:\s*"([^"]+)"/);
+function extractKalturaInfo() {
+    // Extract entryId
+    let entryId = null;
+    const entryIdPatterns = [
+        /entry_id[\s]*:[\s]*['"]([^'"]+)['"]/i,
+        /entryId[\s]*:[\s]*['"]([^'"]+)['"]/i,
+        /entryId[\/=]([^&\/"']+)/i,
+        /1_[a-z0-9]{8}/i
+    ];
+
+    for (const pattern of entryIdPatterns) {
+        const match = document.documentElement.outerHTML.match(pattern);
         if (match && match[1]) {
-            // Unescape any escaped characters in the URL
-            return match[1].replace(/\\+/g, '\\');
+            entryId = match[1];
+            break;
+        } else if (match && pattern.toString().includes('1_')) {
+            // For the fallback pattern which doesn't have a capture group
+            entryId = match[0];
+            break;
         }
-        return null;
-    } catch (e) {
-        debugLog('Error extracting URL:', e);
-        return null;
     }
+
+    // Extract partnerId
+    let partnerId = null;
+    const partnerIdPatterns = [
+        /wid[\s]*:[\s]*['"]_(\d+)['"]/i,
+        /partnerId[\s]*:[\s]*['"]?(\d+)['"]?/i,
+        /p\/(\d+)\//i,
+        /_(\d+)['"]/i
+    ];
+
+    for (const pattern of partnerIdPatterns) {
+        const match = document.documentElement.outerHTML.match(pattern);
+        if (match && match[1]) {
+            partnerId = match[1];
+            break;
+        }
+    }
+
+    return { entryId, partnerId };
 }
 
-function findDownloadLinks() {
-    debugLog('Attempting to find download link in frame:', window.location.href);
 
-    const kplayerIfp = document.getElementById('kplayer_ifp');
+function injectDownloadButton() {
+    const { entryId, partnerId } = extractKalturaInfo();
+    let url = `https://cdnapisec.kaltura.com/p/${partnerId}/sp/${partnerId}00/playManifest/entryId/${entryId}/format/download/protocol/https/flavorParamIds/0`;
 
-    if (!kplayerIfp) {
-        debugLog('kplayer_ifp not found');
-        return;
-    }
-
-    debugLog('Found kplayer_ifp:', kplayerIfp);
-
-    const kplayerIfpDocument = kplayerIfp.contentWindow.document;
-    const scriptContent = kplayerIfpDocument.querySelector('body > script:nth-child(2)').text;
-
-    const url = extractDownloadUrl(scriptContent);
-
-    if (!url) {
-        debugLog('Download URL not found');
-        return;
-    }
-
-    debugLog('Found download URL:', url);
+    debugLog('Found download URL:' + url);
 
     // Create the download button
-    const downloadButton = document.createElement('button');
-    downloadButton.title = 'Download';
-    downloadButton.className = 'btn icon-download comp pull-right display-high';
-    downloadButton.dataset.showTooltip = 'true';
-    downloadButton.tabIndex = 3;
-    downloadButton.onclick = () => window.location.href = url;
+    const button = document.createElement('button');
+    button.textContent = 'Download';
+    button.onclick = () => window.open(url, '_blank');
 
     // Append the download button to the control bar
-    const controlBar = kplayerIfpDocument.querySelector('.controlsContainer');
+    const controlBar = document.querySelector('#player-gui > div.playkit-gui-area > div.playkit-bottom-bar > div.playkit-controls-container > div.playkit-right-controls');
 
     if (!controlBar) {
         debugLog('Control bar not found');
         return;
     }
 
-    controlBar.appendChild(downloadButton);
-    debugLog('Added additional download button:', downloadButton);
+    controlBar.prepend(button);
+    debugLog('Download button added successfully');
 }
 
-window.addEventListener('load', findDownloadLinks);
+window.addEventListener('load', injectDownloadButton);
 debugLog('Listener set up successfully');
