@@ -88,12 +88,14 @@
         button.style.cssText = `
             margin-right: 8px;
             padding: 4px 8px;
-            background: #007bff;
+            background: none;
             color: white;
-            border: none;
+            border: 2px solid white;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            opacity: 0.8;
+            font-weight: bold;
         `;
         button.onclick = () => window.open(url, '_blank');
 
